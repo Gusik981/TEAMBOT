@@ -32,9 +32,9 @@ def load_config() -> dict:
         except Exception as e:
             logger.warning(f"Не удалось прочитать config.json: {e}")
 
-    # Значения по умолчанию
+    # Значения по умолчанию для сервера TeamGrief
     cfg.setdefault("prefix", "!")
-    cfg.setdefault("guild_id", 0)
+    cfg.setdefault("guild_id", 1543281337858002954)
     cfg.setdefault("support_role_id", 0)
     cfg.setdefault("ticket_category_id", 0)
     cfg.setdefault("closed_category_id", 0)
