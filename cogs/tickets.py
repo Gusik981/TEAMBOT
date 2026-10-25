@@ -7,18 +7,28 @@ from utils.transcript import generate_html_transcript
 
 TEAMGRIEF_COLOR = discord.Color.from_rgb(245, 166, 35)  # Фирменный золотистый цвет логотипа TeamGrief
 
+# ID основных ролей персонала сервера TeamGrief
+DEFAULT_STAFF_ROLE_IDS = [
+    1543281337908199567,  # ・Команда проекта
+    1543281337858002958,  # ・Администратор
+    1543281337858002962,  # ・Куратор
+    1563827384409391104,  # ・Технический Администратор
+    1563527398396395630,  # ・Главный Администратор
+    1563527515946098820,  # ・Владелец
+]
 
-class TicketReasonModal(discord.ui.Modal, title="TeamGrief | Создание тикета"):
+
+class TicketReasonModal(discord.ui.Modal, title="TeamGrief >> Создание обращения"):
     topic = discord.ui.TextInput(
         label="Тема обращения",
-        placeholder="Например: Краш при запуске / Проблема с ключом",
+        placeholder="Например: Пропал донат / Баг на сервере / Краш",
         max_length=100,
         required=True
     )
     details = discord.ui.TextInput(
         label="Подробное описание проблемы",
         style=discord.TextStyle.paragraph,
-        placeholder="Опишите вашу проблему подробно (версия, логи, что произошло)...",
+        placeholder="Опишите ситуацию, укажите игровой никнейм и важные подробности...",
         max_length=1500,
         required=True
     )
@@ -38,7 +48,7 @@ class TicketReasonModal(discord.ui.Modal, title="TeamGrief | Создание т
         )
 
 
-class MediaApplicationModal(discord.ui.Modal, title="TeamGrief | Заявка на Медиа"):
+class MediaApplicationModal(discord.ui.Modal, title="TeamGrief >> Заявка на Медиа"):
     channel_url = discord.ui.TextInput(
         label="Ссылка на ваш канал / соцсеть",
         placeholder="https://youtube.com/@... или twitch.tv/... или tiktok/...",
@@ -79,40 +89,40 @@ class MediaApplicationModal(discord.ui.Modal, title="TeamGrief | Заявка н
 
 
 class TicketLauncherView(discord.ui.View):
-    """Постоянная панель создания тикетов TeamGrief."""
+    """Постоянная интерактивная панель создания тикетов в стиле TeamGrief."""
     def __init__(self, cog):
         super().__init__(timeout=None)
         self.cog = cog
 
     @discord.ui.select(
         custom_id="teamgrief_ticket_select",
-        placeholder="Выберите тему обращения к TeamGrief...",
+        placeholder="Выберите раздел для обращения в поддержку...",
         min_values=1,
         max_values=1,
         options=[
             discord.SelectOption(
-                label="Техническая помощь / Краши",
+                label="Техническая помощь / Баги",
                 value="tech_support",
-                description="Ошибки при запуске, баги клиента, вылеты",
+                description="Ошибки при игре, вылеты, баги сервера или клиента",
                 emoji="🛠️"
             ),
             discord.SelectOption(
-                label="Покупка / Ключи / Подписка",
+                label="Покупка / Донат / Привилегии",
                 value="billing_support",
-                description="Вопросы оплаты, активация лицензии, продление",
-                emoji="💳"
+                description="Вопросы оплаты, выдача доната, проблемы с чеком",
+                emoji="💵"
             ),
             discord.SelectOption(
-                label="Заявка на Медиа",
+                label="Заявка на Медиа / Сотрудничество",
                 value="media_application",
-                description="YouTube, Twitch, TikTok, сотрудничество",
-                emoji="🎬"
+                description="Сотрудничество для YouTube, Twitch и TikTok",
+                emoji="🔴"
             ),
             discord.SelectOption(
-                label="Жалоба / Другое",
+                label="Вопрос к Администрации / Жалоба",
                 value="other_report",
-                description="Жалобы или нестандартные вопросы",
-                emoji="⚠️"
+                description="Личный вопрос руководству или конфиденциальная жалоба",
+                emoji="❗"
             ),
         ]
     )
@@ -125,10 +135,10 @@ class TicketLauncherView(discord.ui.View):
 
         categories = {
             "tech_support": "Техническая помощь / Баги",
-            "billing_support": "Оплата / Ключи / Подписка",
-            "other_report": "Жалоба / Другое"
+            "billing_support": "Покупка / Донат",
+            "other_report": "Вопрос к Администрации"
         }
-        category_name = categories.get(selected_value, "Поддержка TeamGrief")
+        category_name = categories.get(selected_value, "Поддержка")
         modal = TicketReasonModal(cog=self.cog, category_name=category_name)
         await interaction.response.send_modal(modal)
 
@@ -167,7 +177,7 @@ class ManageMemberModal(discord.ui.Modal):
             await interaction.response.send_message(f"✅ Пользователь {member.mention} добавлен в тикет.")
         else:
             await channel.set_permissions(member, overwrite=None)
-            await interaction.response.send_message(f"🚫 Пользователь {member.mention} удален из тикета.")
+            await interaction.response.send_message(f"🚫 Пользователь {member.mention} исключён из тикета.")
 
 
 class TicketControlView(discord.ui.View):
@@ -185,7 +195,7 @@ class TicketControlView(discord.ui.View):
     async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         confirm_view = TicketCloseConfirmView(self.cog)
         await interaction.response.send_message(
-            "❓ Вы уверены, что хотите закрыть этот тикет? Переписка будет сохранена в транскрипт.",
+            "❓ Вы уверены, что хотите закрыть это обращение? История переписки будет сохранена в транскрипт.",
             view=confirm_view,
             ephemeral=True
         )
@@ -254,7 +264,7 @@ class TicketCloseConfirmView(discord.ui.View):
 
 
 class TicketClosedControlView(discord.ui.View):
-    """Постоянная панель управления закрытым тикетом в категории CLOSED TICKETS."""
+    """Постоянная панель управления закрытым тикетом в категории архива."""
     def __init__(self, cog):
         super().__init__(timeout=None)
         self.cog = cog
@@ -308,7 +318,7 @@ class TicketsCog(commands.Cog, name="Tickets"):
         self.config = config
 
     async def cog_load(self):
-        # Регистрируем постоянные Views для работы кнопок даже после перезагрузки бота
+        # Регистрируем постоянные Views для бесперебойной работы кнопок 24/7
         self.bot.add_view(TicketLauncherView(self))
         self.bot.add_view(TicketControlView(self))
         self.bot.add_view(TicketClosedControlView(self))
@@ -321,10 +331,27 @@ class TicketsCog(commands.Cog, name="Tickets"):
                 return cat
 
         for cat in guild.categories:
-            if "tickets" in cat.name.lower() and "closed" not in cat.name.lower():
+            if "тикет" in cat.name.lower() and "архив" not in cat.name.lower() and "closed" not in cat.name.lower():
+                return cat
+            if "ticket" in cat.name.lower() and "closed" not in cat.name.lower():
                 return cat
 
-        return await guild.create_category("🎫・TICKETS・⚔️")
+        # Категория в фирменном стиле сервера: Emoji >> Название
+        return await guild.create_category("🎫 >> Тикеты")
+
+    async def get_closed_category(self, guild: discord.Guild) -> discord.CategoryChannel:
+        cat_id = self.config.get("closed_category_id", 0)
+        if cat_id and int(cat_id) != 0:
+            cat = guild.get_channel(int(cat_id))
+            if isinstance(cat, discord.CategoryChannel):
+                return cat
+
+        for cat in guild.categories:
+            if "архив" in cat.name.lower() or "closed" in cat.name.lower() or "закрыт" in cat.name.lower():
+                return cat
+
+        # Архивная категория в стиле сервера
+        return await guild.create_category("🔒 >> Архив тикетов")
 
     async def create_ticket_channel(self, interaction: discord.Interaction, category_name: str, topic: str, details: str, is_media: bool = False):
         guild = interaction.guild
@@ -334,21 +361,21 @@ class TicketsCog(commands.Cog, name="Tickets"):
             await interaction.followup.send("Команда доступна только на сервере.", ephemeral=True)
             return
 
-        # Проверка на наличие уже открытого тикета
-        prefix = "media-" if is_media else "tg-"
-        existing = discord.utils.find(
-            lambda c: c.name.startswith(f"{prefix}{user.name.lower()[:10]}"),
-            guild.text_channels
-        )
-        if existing:
-            await interaction.followup.send(
-                f"⚠️ У вас уже есть открытый канал: {existing.mention}. Пожалуйста, используйте его.",
-                ephemeral=True
-            )
-            return
+        # Проверка на наличие уже открытого тикета у пользователя
+        uname_prefix = user.name.lower()[:8]
+        for ch in guild.text_channels:
+            ch_name_clean = ch.name.lower()
+            is_closed = "🔒" in ch.name or "closed" in ch_name_clean or (ch.category and "архив" in ch.category.name.lower())
+            if not is_closed and uname_prefix in ch_name_clean and ("🎫" in ch.name or "🎬" in ch.name or "tg-" in ch_name_clean):
+                await interaction.followup.send(
+                    f"⚠️ У вас уже есть открытый канал: {ch.mention}. Пожалуйста, используйте его.",
+                    ephemeral=True
+                )
+                return
 
         category = await self.get_or_create_category(guild)
 
+        # Базовые права: канал скрыт для всех, виден автору и боту
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(view_channel=False),
             guild.me: discord.PermissionOverwrite(
@@ -368,18 +395,27 @@ class TicketsCog(commands.Cog, name="Tickets"):
             )
         }
 
-        support_role_id = self.config.get("support_role_id", 0)
-        support_role = guild.get_role(int(support_role_id)) if support_role_id and int(support_role_id) != 0 else None
-        if support_role:
-            overwrites[support_role] = discord.PermissionOverwrite(
-                view_channel=True,
-                send_messages=True,
-                read_message_history=True,
-                attach_files=True,
-                embed_links=True
-            )
+        # Выдаем права ролям персонала сервера TeamGrief
+        staff_ids = list(DEFAULT_STAFF_ROLE_IDS)
+        cfg_role = self.config.get("support_role_id", 0)
+        if cfg_role and int(cfg_role) != 0 and int(cfg_role) not in staff_ids:
+            staff_ids.append(int(cfg_role))
 
-        channel_name = f"media-{user.name[:10].lower()}" if is_media else f"tg-{user.name[:10].lower()}"
+        for rid in staff_ids:
+            role = guild.get_role(rid)
+            if role:
+                overwrites[role] = discord.PermissionOverwrite(
+                    view_channel=True,
+                    send_messages=True,
+                    read_message_history=True,
+                    attach_files=True,
+                    embed_links=True
+                )
+
+        # Формат имени канала в точности как на сервере: │ Эмодзи・название
+        clean_username = "".join(c for c in user.name.lower() if c.isalnum() or c in ("-", "_"))[:10]
+        channel_name = f"│🎬・{clean_username}" if is_media else f"│🎫・{clean_username}"
+
         channel = await guild.create_text_channel(
             name=channel_name,
             category=category,
@@ -389,26 +425,34 @@ class TicketsCog(commands.Cog, name="Tickets"):
 
         if is_media:
             embed = discord.Embed(
-                title="🎬 TeamGrief | Заявка на Медиа-сотрудничество",
-                description=f"Приветствуем, {user.mention}!\n"
-                            f"Ваша заявка на получение **Медиа-статуса** в TeamGrief успешно отправлена.\n"
-                            f"Администрация и разработчики ознакомятся с вашей анкетой и ответят вам прямо здесь.",
+                title="🎬 >> TeamGrief | Заявка на Медиа",
+                description=(
+                    f"Приветствуем, {user.mention}!\n\n"
+                    f"Ваша заявка на получение **Медиа-статуса** на проекте **TeamGrief** успешно зарегистрирована.\n"
+                    f"Смотрящие и кураторы медиа ознакомятся с вашей анкетой и дадут ответ прямо здесь.\n\n"
+                    f"**Данные анкеты:**\n"
+                    f"{details}\n"
+                ),
                 color=discord.Color.gold()
             )
-            embed.add_field(name="📋 Анкета заявителя", value=details, inline=False)
-            embed.set_footer(text="TeamGrief Media Team • Ожидайте рассмотрения")
+            embed.set_footer(text="TeamGrief >> Медиа-команда • Ожидайте рассмотрения")
         else:
             embed = discord.Embed(
-                title=f"⚔️ TeamGrief | {category_name}",
-                description=f"Приветствуем, {user.mention}!\n"
-                            f"Ваше обращение принято службой поддержки **TeamGrief**.\n"
-                            f"Опишите все детали, приложите логи и скриншоты при наличии. "
-                            f"Специалисты ответят вам в ближайшее время.",
+                title=f"🎫 >> TeamGrief | {category_name}",
+                description=(
+                    f"Приветствуем, {user.mention}!\n\n"
+                    f"Ваше обращение принято **Командой проекта TeamGrief**.\n"
+                    f"Пожалуйста, подробно опишите все детали, приложите скриншоты или логи.\n"
+                    f"Персонал проекта ответит вам в ближайшее время!\n\n"
+                    f"**Детали тикета:**\n"
+                    f"│ 👤・**Автор:** {user.mention} (`{user.id}`)\n"
+                    f"│ 📌・**Раздел:** `{category_name}`\n"
+                    f"│ 📋・**Тема:** {topic}\n"
+                    f"│ 📝・**Описание:** {details}\n"
+                ),
                 color=TEAMGRIEF_COLOR
             )
-            embed.add_field(name="📌 Тема обращения", value=topic, inline=False)
-            embed.add_field(name="📝 Описание проблемы", value=details, inline=False)
-            embed.set_footer(text="TeamGrief Support • Используйте кнопки ниже для управления")
+            embed.set_footer(text="TeamGrief >> Самый чиловый проект • Используйте кнопки ниже")
 
         mention_str = f"{user.mention}"
         view = TicketControlView(self)
@@ -419,32 +463,19 @@ class TicketsCog(commands.Cog, name="Tickets"):
             ephemeral=True
         )
 
-    async def get_closed_category(self, guild: discord.Guild) -> discord.CategoryChannel:
-        cat_id = self.config.get("closed_category_id", 0)
-        if cat_id and int(cat_id) != 0:
-            cat = guild.get_channel(int(cat_id))
-            if isinstance(cat, discord.CategoryChannel):
-                return cat
-
-        for cat in guild.categories:
-            if "closed" in cat.name.lower() or "закрыт" in cat.name.lower() or "архив" in cat.name.lower():
-                return cat
-
-        return await guild.create_category("🔒・CLOSED TICKETS・📁")
-
     async def close_ticket(self, channel: discord.TextChannel, closed_by: discord.Member | discord.User):
         await channel.send(f"🔒 Тикет закрывается пользователем {closed_by.mention}. Перемещение в архив...")
 
-        # 1. Перемещение в категорию закрытых тикетов и переименование
+        # 1. Перемещение в категорию архива и переименование канала
         closed_category = await self.get_closed_category(channel.guild)
-        clean_name = channel.name.replace("tg-", "").replace("closed-", "").replace("media-", "")
-        new_channel_name = f"closed-{clean_name[:12]}"
+        clean_name = channel.name.replace("│", "").replace("🎫", "").replace("🎬", "").replace("🔒", "").replace("・", "").replace("tg-", "").replace("media-", "").replace("closed-", "").strip()
+        new_channel_name = f"│🔒・{clean_name[:10]}"
         try:
             await channel.edit(category=closed_category, name=new_channel_name, sync_permissions=True)
         except Exception:
             pass
 
-        # 2. Запрещаем просмотр канала автору и участникам тикета
+        # 2. Мгновенно скрываем канал от автора и обычных участников
         for target in list(channel.overwrites.keys()):
             if isinstance(target, discord.Member) and not target.bot:
                 try:
@@ -456,7 +487,7 @@ class TicketsCog(commands.Cog, name="Tickets"):
         transcript_buffer = await generate_html_transcript(channel)
         filename = f"transcript-{channel.name}.html"
 
-        # Лог-канал
+        # Отправка в лог-канал
         log_channel_id = self.config.get("log_channel_id", 0)
         if log_channel_id and int(log_channel_id) != 0:
             log_channel = channel.guild.get_channel(int(log_channel_id))
@@ -464,11 +495,12 @@ class TicketsCog(commands.Cog, name="Tickets"):
                 transcript_buffer.seek(0)
                 log_file = discord.File(fp=transcript_buffer, filename=filename)
                 log_embed = discord.Embed(
-                    title=f"Тикет закрыт: #{channel.name}",
+                    title=f"🔒 Тикет закрыт: #{channel.name}",
+                    description=f"│ 👤・**Закрыл:** {closed_by.mention}\n"
+                                f"│ 🌐・**Сервер:** {channel.guild.name}\n"
+                                f"│ 📄・**Канал:** `#{channel.name}`\n",
                     color=discord.Color.red()
                 )
-                log_embed.add_field(name="Закрыл", value=closed_by.mention, inline=True)
-                log_embed.add_field(name="Сервер", value=channel.guild.name, inline=True)
                 if channel.topic:
                     log_embed.add_field(name="Инфо", value=channel.topic, inline=False)
                 await log_channel.send(embed=log_embed, file=log_file)
@@ -480,30 +512,35 @@ class TicketsCog(commands.Cog, name="Tickets"):
                     transcript_buffer.seek(0)
                     dm_file = discord.File(fp=transcript_buffer, filename=filename)
                     await target.send(
-                        f"Ваш тикет в **TeamGrief** ({channel.guild.name}) был закрыт {closed_by}.\n"
+                        f"Ваше обращение на сервере **TeamGrief** ({channel.guild.name}) было закрыто модератором {closed_by}.\n"
                         f"История переписки сохранена в транскрипте ниже:",
                         file=dm_file
                     )
                 except Exception:
                     pass
 
-        # 4. Отправляем карточку закрытого тикета с кнопками управления
+        # 4. Сообщение в архивном канале с кнопками управления
         closed_embed = discord.Embed(
-            title="🔒 Тикет закрыт и перемещён в архив",
-            description=f"Тикет был закрыт пользователем {closed_by.mention}.\n"
-                        f"Канал перенесён в категорию **`{closed_category.name}`**.\n"
-                        f"Автор больше не может отправлять сообщения.\n\n"
-                        f"Для окончательного удаления нажмите кнопку **Удалить навсегда** ниже.",
+            title="🔒 >> Тикет закрыт и перемещён в архив",
+            description=(
+                f"Тикет был закрыт пользователем {closed_by.mention}.\n"
+                f"Канал перемещён в архивную категорию **`{closed_category.name}`**.\n"
+                f"Обычные пользователи больше не видят этот канал.\n\n"
+                f"**Действия персонала:**\n"
+                f"• Нажмите **Удалить навсегда** для окончательного удаления канала.\n"
+                f"• Нажмите **Открыть заново**, если требуется продолжить диалог.\n"
+                f"• Нажмите **Транскрипт**, чтобы скачать файл диалога.\n"
+            ),
             color=discord.Color.dark_gray()
         )
-        closed_embed.set_footer(text="TeamGrief • Архив тикетов")
+        closed_embed.set_footer(text="TeamGrief >> Архив тикетов")
         view = TicketClosedControlView(self)
         await channel.send(embed=closed_embed, view=view)
 
     async def reopen_ticket(self, channel: discord.TextChannel, reopened_by: discord.Member | discord.User):
         open_category = await self.get_or_create_category(channel.guild)
-        clean_name = channel.name.replace("closed-", "").replace("tg-", "").replace("media-", "")
-        new_name = f"tg-{clean_name[:12]}"
+        clean_name = channel.name.replace("│", "").replace("🔒", "").replace("🎫", "").replace("🎬", "").replace("・", "").strip()
+        new_name = f"│🎫・{clean_name[:10]}"
 
         try:
             await channel.edit(category=open_category, name=new_name)
@@ -519,7 +556,7 @@ class TicketsCog(commands.Cog, name="Tickets"):
                     pass
 
         reopen_embed = discord.Embed(
-            title="🔓 Тикет снова открыт",
+            title="🔓 >> Тикет снова открыт",
             description=f"Тикет был открыт заново пользователем {reopened_by.mention}!\n"
                         f"Канал возвращён в категорию активных тикетов **`{open_category.name}`**.",
             color=TEAMGRIEF_COLOR
@@ -531,25 +568,29 @@ class TicketsCog(commands.Cog, name="Tickets"):
     @app_commands.default_permissions(administrator=True)
     async def ticket_panel_command(self, interaction: discord.Interaction):
         embed = discord.Embed(
-            title="⚔️ TeamGrief | Центр поддержки",
-            description="Возникли сложности с запуском, баги, вопросы по подписке или предложения по улучшению **TeamGrief**?\n\n"
-                        "Выберите нужный раздел в меню ниже, заполните короткую форму, и команда поддержки свяжется с вами!\n\n"
-                        "**Правила:**\n"
-                        "• Формулируйте проблему четко и развернуто.\n"
-                        "• Прикрепляйте логи краша или скриншоты при наличии.\n"
-                        "• Не создавайте несколько тикетов по одной проблеме — это ускорит ответ.",
+            title="📌 >> TeamGrief | Центр поддержки",
+            description=(
+                "Добро пожаловать в центр поддержки сервера **TeamGrief >> Самый чиловый проект**!\n\n"
+                "Возникли вопросы по донату, технические сложности, краши или хотите предложить идею? "
+                "Создайте приватное обращение к персоналу проекта.\n\n"
+                "**Правила подачи тикета:**\n"
+                "│ 📌・Формулируйте вопрос четко, понятно и без лишнего спама.\n"
+                "│ 📎・Прикрепляйте скриншоты, чеки или логи при наличии.\n"
+                "│ ⏳・Специалисты ответят вам в порядке очереди прямо в канале тикета.\n\n"
+                "⬇️ **Для создания тикета выберите нужный раздел в меню ниже:**"
+            ),
             color=TEAMGRIEF_COLOR
         )
-        embed.set_footer(text="TeamGrief Support • Выберите категорию в меню ниже ⬇️")
+        embed.set_footer(text="TeamGrief >> Поддержка • Выберите раздел в меню ⬇️")
 
         view = TicketLauncherView(self)
         await interaction.channel.send(embed=embed, view=view)
-        await interaction.response.send_message("✅ Панель тикетов TeamGrief успешно отправлена!", ephemeral=True)
+        await interaction.response.send_message("✅ Панель тикетов TeamGrief успешно отправлена в канал!", ephemeral=True)
 
-    @app_commands.command(name="ticket-add", description="Добавить пользователя в текущий тикет TeamGrief")
+    @app_commands.command(name="ticket-add", description="Добавить пользователя в текущий тикет")
     async def ticket_add_command(self, interaction: discord.Interaction, member: discord.Member):
         channel = interaction.channel
-        if not isinstance(channel, discord.TextChannel) or not (channel.name.startswith("tg-") or channel.name.startswith("media-") or channel.name.startswith("ticket-")):
+        if not isinstance(channel, discord.TextChannel) or not ("🎫" in channel.name or "🎬" in channel.name or "tg-" in channel.name or "ticket" in channel.name):
             await interaction.response.send_message("❌ Эта команда может использоваться только внутри тикета.", ephemeral=True)
             return
 
@@ -559,23 +600,23 @@ class TicketsCog(commands.Cog, name="Tickets"):
     @app_commands.command(name="ticket-remove", description="Исключить пользователя из текущего тикета")
     async def ticket_remove_command(self, interaction: discord.Interaction, member: discord.Member):
         channel = interaction.channel
-        if not isinstance(channel, discord.TextChannel) or not (channel.name.startswith("tg-") or channel.name.startswith("media-") or channel.name.startswith("ticket-")):
+        if not isinstance(channel, discord.TextChannel) or not ("🎫" in channel.name or "🎬" in channel.name or "tg-" in channel.name or "ticket" in channel.name):
             await interaction.response.send_message("❌ Эта команда может использоваться только внутри тикета.", ephemeral=True)
             return
 
         await channel.set_permissions(member, overwrite=None)
         await interaction.response.send_message(f"🚫 Пользователь {member.mention} удален из тикета.")
 
-    @app_commands.command(name="ticket-close", description="Закрыть текущий тикет TeamGrief")
+    @app_commands.command(name="ticket-close", description="Закрыть текущий тикет")
     async def ticket_close_command(self, interaction: discord.Interaction):
         channel = interaction.channel
-        if not isinstance(channel, discord.TextChannel) or not (channel.name.startswith("tg-") or channel.name.startswith("media-") or channel.name.startswith("ticket-")):
+        if not isinstance(channel, discord.TextChannel) or not ("🎫" in channel.name or "🎬" in channel.name or "tg-" in channel.name or "ticket" in channel.name):
             await interaction.response.send_message("❌ Эта команда может использоваться только внутри тикета.", ephemeral=True)
             return
 
         confirm_view = TicketCloseConfirmView(self)
         await interaction.response.send_message(
-            "❓ Вы уверены, что хотите закрыть этот тикет?",
+            "❓ Вы уверены, что хотите закрыть это обращение?",
             view=confirm_view,
             ephemeral=True
         )

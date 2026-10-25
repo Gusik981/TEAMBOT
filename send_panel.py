@@ -37,29 +37,33 @@ async def on_ready():
         print("\nКаналы:")
         for ch in guild.text_channels:
             print(f" - #{ch.name} (ID: {ch.id})")
-            if "ticket" in ch.name.lower() or "тикет" in ch.name.lower():
+            if "тикет" in ch.name.lower() or "ticket" in ch.name.lower():
                 target_channel = ch
 
     if target_channel:
         print(f"\nНайден целевой канал для тикетов: #{target_channel.name} (ID: {target_channel.id})")
         
         embed = discord.Embed(
-            title="⚔️ TeamGrief | Центр поддержки",
-            description="Возникли сложности с запуском, баги, вопросы по подписке или предложения по улучшению **TeamGrief**?\n\n"
-                        "Выберите нужный раздел в выпадающем меню ниже, заполните короткую форму, и команда поддержки свяжется с вами!\n\n"
-                        "**Правила:**\n"
-                        "• Формулируйте проблему четко и развернуто.\n"
-                        "• Прикрепляйте логи краша или скриншоты при наличии.\n"
-                        "• Не создавайте несколько тикетов по одной проблеме — это ускорит ответ.",
+            title="📌 >> TeamGrief | Центр поддержки",
+            description=(
+                "Добро пожаловать в центр поддержки сервера **TeamGrief >> Самый чиловый проект**!\n\n"
+                "Возникли вопросы по донату, технические сложности, краши или хотите предложить идею? "
+                "Создайте приватное обращение к персоналу проекта.\n\n"
+                "**Правила подачи тикета:**\n"
+                "│ 📌・Формулируйте вопрос четко, понятно и без лишнего спама.\n"
+                "│ 📎・Прикрепляйте скриншоты, чеки или логи при наличии.\n"
+                "│ ⏳・Специалисты ответят вам в порядке очереди прямо в канале тикета.\n\n"
+                "⬇️ **Для создания тикета выберите нужный раздел в меню ниже:**"
+            ),
             color=TEAMGRIEF_COLOR
         )
-        embed.set_footer(text="TeamGrief Support • Выберите категорию в меню ниже ⬇️")
+        embed.set_footer(text="TeamGrief >> Поддержка • Выберите раздел в меню ⬇️")
 
         view = TicketLauncherView(None)
         msg = await target_channel.send(embed=embed, view=view)
         print(f"УСПЕХ! Панель тикетов отправлена в #{target_channel.name}! ID сообщения: {msg.id}")
     else:
-        print("Канал со словом 'ticket' или 'тикет' не найден. Создайте канал или отправьте через слэш-команду /ticket-panel.")
+        print("Канал со словом 'тикет' или 'ticket' не найден. Создайте канал или вызовите /ticket-panel в Discord.")
 
     await client.close()
 
