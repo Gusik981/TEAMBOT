@@ -113,12 +113,6 @@ class TicketLauncherView(discord.ui.View):
                 emoji="💵"
             ),
             discord.SelectOption(
-                label="Заявка на Медиа / Сотрудничество",
-                value="media_application",
-                description="Сотрудничество для YouTube, Twitch и TikTok",
-                emoji="🔴"
-            ),
-            discord.SelectOption(
                 label="Вопрос к Администрации / Жалоба",
                 value="other_report",
                 description="Личный вопрос руководству или конфиденциальная жалоба",
@@ -128,11 +122,6 @@ class TicketLauncherView(discord.ui.View):
     )
     async def select_category(self, interaction: discord.Interaction, select: discord.ui.Select):
         selected_value = select.values[0]
-        if selected_value == "media_application":
-            modal = MediaApplicationModal(cog=self.cog)
-            await interaction.response.send_modal(modal)
-            return
-
         categories = {
             "tech_support": "Техническая помощь / Баги",
             "billing_support": "Покупка / Донат",
