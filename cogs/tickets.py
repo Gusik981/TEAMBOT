@@ -264,24 +264,10 @@ class TicketCloseConfirmView(discord.ui.View):
 
 
 class TicketClosedControlView(discord.ui.View):
-    """Постоянная панель управления закрытым тикетом в категории архива."""
+    """Постоянная панель управления закрытым тикетом в категории архива (без удаления)."""
     def __init__(self, cog):
         super().__init__(timeout=None)
         self.cog = cog
-
-    @discord.ui.button(
-        label="Удалить навсегда",
-        style=discord.ButtonStyle.danger,
-        emoji="🗑️",
-        custom_id="tg_btn_delete_forever"
-    )
-    async def delete_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("🗑️ Удаление канала тикета через 3 секунды...")
-        await asyncio.sleep(3)
-        try:
-            await interaction.channel.delete(reason=f"Тикет окончательно удален {interaction.user}")
-        except Exception:
-            pass
 
     @discord.ui.button(
         label="Транскрипт",
@@ -471,9 +457,13 @@ class TicketsCog(commands.Cog, name="Tickets"):
         clean_name = channel.name.replace("│", "").replace("🎫", "").replace("🎬", "").replace("🔒", "").replace("・", "").replace("tg-", "").replace("media-", "").replace("closed-", "").strip()
         new_channel_name = f"│🔒・{clean_name[:10]}"
         try:
-            await channel.edit(category=closed_category, name=new_channel_name, sync_permissions=True)
+            # Перемещаем без sync_permissions чтобы не требовать Manage Roles
+            await channel.edit(category=closed_category, name=new_channel_name)
         except Exception:
-            pass
+            try:
+                await channel.edit(category=closed_category)
+            except Exception:
+                pass
 
         # 2. Мгновенно скрываем канал от автора и обычных участников
         for target in list(channel.overwrites.keys()):
@@ -519,17 +509,15 @@ class TicketsCog(commands.Cog, name="Tickets"):
                 except Exception:
                     pass
 
-        # 4. Сообщение в архивном канале с кнопками управления
+        # 4. Сообщение в архивном канале с кнопками управления (без кнопки удаления)
         closed_embed = discord.Embed(
-            title="🔒 >> Тикет закрыт и перемещён в архив",
+            title="🔒 >> Тикет сохранён в архив",
             description=(
-                f"Тикет был закрыт пользователем {closed_by.mention}.\n"
-                f"Канал перемещён в архивную категорию **`{closed_category.name}`**.\n"
+                f"Обращение закрыто пользователем {closed_by.mention}.\n"
+                f"Канал успешно перемещён в архивную категорию **`{closed_category.name}`** и будет храниться здесь.\n"
                 f"Обычные пользователи больше не видят этот канал.\n\n"
-                f"**Действия персонала:**\n"
-                f"• Нажмите **Удалить навсегда** для окончательного удаления канала.\n"
-                f"• Нажмите **Открыть заново**, если требуется продолжить диалог.\n"
-                f"• Нажмите **Транскрипт**, чтобы скачать файл диалога.\n"
+                f"│ 📜・Нажмите **Транскрипт**, чтобы скачать файл диалога.\n"
+                f"│ 🔓・Нажмите **Открыть заново**, если требуется возобновить обращение.\n"
             ),
             color=discord.Color.dark_gray()
         )
